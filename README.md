@@ -11,11 +11,17 @@ Deployment: Hosted on PythonAnywhere for easy access.
 
 ## Project Structure
 project-directory/
+
 │
+
 ├── app.py                  # Main application file
+
 ├── requirements.txt        # Dependencies file
+
 ├── .env                    # Environment variables (not included in repository for security)
+
 └── templates/
+
     └── index.html          # HTML template for the web interface
 
 
