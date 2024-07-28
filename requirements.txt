@@ -1,0 +1,6 @@
+flask
+pandas
+openai>=1.0.0
+xlrd
+docx2txt
+openpyxl

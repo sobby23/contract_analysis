@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contract and Task Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="file"], input[type="submit"] {
+            display: block;
+            margin: 10px 0;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .json-viewer, .task-table {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .highlight {
+            background-color: #ffdddd;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s ease infinite;
+            margin: auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #loading-message {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Contract and Task Analysis</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <label for="contract">Contract File:</label>
+        <input type="file" id="contract" name="contract" accept=".docx"><br>
+        <label for="tasks">Tasks File:</label>
+        <input type="file" id="tasks" name="tasks" accept=".xlsx"><br>
+        <input type="submit" value="Run Analysis">
+    </form>
+    <div id="loading-message" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Analyzing data, please wait...</p>
+    </div>
+    <div id="results" style="display: none;">
+        <h2>Key Contract Terms</h2>
+        <div id="contract-terms" class="json-viewer"></div>
+        <h2>Task Analysis</h2>
+        <div id="task-analysis">
+            <table class="task-table">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Amount</th>
+                        <th>Compliance</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody id="task-analysis-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const form = document.querySelector('form');
+        form.onsubmit = async (event) => {
+            event.preventDefault();
+            const formData = new FormData(form);
+
+            // Show the loading message and spinner
+            document.getElementById('loading-message').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            // Hide the loading message and spinner
+            document.getElementById('loading-message').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+
+            const results = await response.json();
+
+            // Display contract terms
+            document.getElementById('contract-terms').innerHTML = JSON.stringify(results.contract_conditions, null, 2);
+
+            // Display task analysis results
+            const taskBody = document.getElementById('task-analysis-body');
+            taskBody.innerHTML = "";
+            if (results.analysis_results && results.analysis_results.length > 0) {
+                results.analysis_results.forEach(task => {
+                    const row = document.createElement('tr');
+                    if (task.compliance_status === "Non-Compliant") {
+                        row.classList.add('highlight');
+                    }
+                    const reasonText = task.reason ? task.reason : "";
+                    row.innerHTML = `
+                        <td>${task.task}</td>
+                        <td>${task.amount}</td>
+                        <td>${task.compliance_status}</td>
+                        <td>${reasonText}</td>
+                    `;
+                    taskBody.appendChild(row);
+                });
+            } else {
+                taskBody.innerHTML = "<tr><td colspan='4'>No analysis results available.</td></tr>";
+            }
+
+            // Display total expenditure status
+            const totalExpenditureStatus = results.total_expenditure_status;
+            if (totalExpenditureStatus) {
+                const totalRow = document.createElement('tr');
+                totalRow.classList.add(totalExpenditureStatus === 'Non-Compliant' ? 'highlight' : '');
+                totalRow.innerHTML = `
+                    <td colspan="3"><strong>Total Expenditure Status</strong></td>
+                    <td>${totalExpenditureStatus}: ${results.reason}</td>
+                `;
+                taskBody.appendChild(totalRow);
+            }
+        };
+    </script>
+</body>
+</html>
